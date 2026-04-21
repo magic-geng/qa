@@ -17,7 +17,7 @@ export function tableExists(db, table) {
   return Boolean(row);
 }
 
-/** @type {{ id: string, up: (db: import("better-sqlite3").Database) => void }[]} */
+/** @type {{ id: string, up: (db: any) => void }[]} */
 const migrations = [
   // 示例：以后要给 questions 加字段，按下面格式新增一条（id 用新日期或语义，勿重复）：
   // {
