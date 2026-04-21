@@ -20,6 +20,7 @@ const rowToRecord = (row) => ({
   application: row.application ?? "",
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
+  viewCount: row.viewCount ?? 0,
 });
 
 async function main() {
@@ -35,7 +36,8 @@ async function main() {
       prosCons TEXT NOT NULL DEFAULT '',
       application TEXT NOT NULL DEFAULT '',
       createdAt INTEGER NOT NULL,
-      updatedAt INTEGER NOT NULL
+      updatedAt INTEGER NOT NULL,
+      viewCount INTEGER NOT NULL DEFAULT 0
     );
     CREATE INDEX IF NOT EXISTS idx_questions_updatedAt ON questions(updatedAt);
     CREATE INDEX IF NOT EXISTS idx_questions_category ON questions(category);
@@ -95,14 +97,34 @@ async function main() {
     }
   });
 
+  /** 随机推荐（须放在 /:id 之前，避免 id 被解析成 "random"） */
+  app.get("/api/questions/random", (req, res) => {
+    try {
+      const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? "40"), 10) || 40));
+      const rows = db
+        .prepare("SELECT * FROM questions ORDER BY (COALESCE(viewCount, 0) + 1) * ABS(RANDOM() % 10000) DESC LIMIT ?")
+        .all(limit)
+        .map(rowToRecord);
+      res.json({ items: rows });
+    } catch (e) {
+      res.status(500).json({ message: e.message || "服务器错误" });
+    }
+  });
+
   app.get("/api/questions/:id", (req, res) => {
     try {
-      const row = db.prepare("SELECT * FROM questions WHERE id = ?").get(req.params.id);
+      const id = req.params.id;
+      const row = db.prepare("SELECT * FROM questions WHERE id = ?").get(id);
       if (!row) {
         res.status(404).json({ message: "未找到" });
         return;
       }
-      res.json(rowToRecord(row));
+      
+      // 增加浏览次数
+      db.prepare("UPDATE questions SET viewCount = COALESCE(viewCount, 0) + 1 WHERE id = ?").run(id);
+      db.persist();
+
+      res.json(rowToRecord({ ...row, viewCount: (row.viewCount ?? 0) + 1 }));
     } catch (e) {
       res.status(500).json({ message: e.message || "服务器错误" });
     }

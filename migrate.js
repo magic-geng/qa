@@ -19,27 +19,14 @@ export function tableExists(db, table) {
 
 /** @type {{ id: string, up: (db: any) => void }[]} */
 const migrations = [
-  // 示例：以后要给 questions 加字段，按下面格式新增一条（id 用新日期或语义，勿重复）：
-  // {
-  //   id: "20260210_add_notes",
-  //   up(db) {
-  //     if (!columnExists(db, "questions", "notes")) {
-  //       db.exec("ALTER TABLE questions ADD COLUMN notes TEXT NOT NULL DEFAULT '';");
-  //     }
-  //   },
-  // },
-  // 新表示例：
-  // {
-  //   id: "20260210_create_tags",
-  //   up(db) {
-  //     db.exec(`
-  //       CREATE TABLE IF NOT EXISTS tags (
-  //         id TEXT PRIMARY KEY,
-  //         name TEXT NOT NULL
-  //       );
-  //     `);
-  //   },
-  // },
+  {
+    id: "20260421_add_viewCount",
+    up(db) {
+      if (!columnExists(db, "questions", "viewCount")) {
+        db.exec("ALTER TABLE questions ADD COLUMN viewCount INTEGER NOT NULL DEFAULT 0;");
+      }
+    },
+  },
 ];
 
 export function runMigrations(db) {
